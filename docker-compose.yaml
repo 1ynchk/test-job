@@ -1,0 +1,49 @@
+
+services:
+
+  database:
+    
+    container_name: postgres_database
+
+    image: postgres:latest
+
+    ports:
+    - "4321:5432"
+
+    environment:
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_DB: ${DB_NAME}
+
+    restart: always
+
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${DB_USER} -d ${DB_NAME}']
+      interval: 10s
+      timeout: 10s
+      retries: 5
+
+
+  backend:
+    
+    build:
+      context: ./
+      dockerfile: dockerfile
+
+    ports:
+    - "8080:8080"
+
+    environment:
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_PORT: 5432
+      DB_HOST: database
+      DB_NAME: ${DB_NAME}
+
+    depends_on:
+      database:
+        condition: service_healthy
+
+    command: >
+      sh -c "python manage.py migrate &&
+             gunicorn MediaNation.wsgi:application --bind 0.0.0.0:8080" 
