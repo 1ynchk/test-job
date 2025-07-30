@@ -1,0 +1,26 @@
+FROM alpine:latest
+
+WORKDIR /db
+
+COPY init.bash .
+
+RUN apk update \
+	&& apk upgrade \
+	&& apk add postgresql \
+	&& mkdir -p /run/postgresql \
+	&& mkdir -p /var/lib/postgresql/data \
+	&& chown postgres:postgres /run/postgresql \
+	&& chown postgres:postgres /var/lib/postgresql/data \
+	&& chown postgres:postgres /var/log/postgresql \
+	&& chmod 777 init.bash \
+	&& apk add bash
+
+USER postgres
+
+ENV POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+ENV POSTGRES_USER=${POSTGRES_USER}
+ENV POSTGRES_DB=${POSTGRES_DB}
+
+RUN initdb -D /var/lib/postgresql/data
+
+CMD ["./init.bash"]
